@@ -8,6 +8,17 @@ on:
       - dev
       - master
 
+# 添加权限设置
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 允许一个并发部署
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
   release:
     name: Build Website
@@ -17,11 +28,13 @@ jobs:
       # 检出 Git 仓库
       - name: Check out git repository
         uses: actions/checkout@v4.1.1
+      
       # 安装 Node.js
       - name: Install Node.js
         uses: actions/setup-node@v4.0.0
         with:
           node-version: "18.x"
+      
       # 复制环境变量文件
       - name: Copy .env.example
         run: |
@@ -30,17 +43,28 @@ jobs:
           } else {
             Write-Host ".env file already exists. Skipping the copy step."
           }
+      
       # 安装项目依赖
       - name: Install Dependencies
         run: npm install
+      
       # 构建程序
       - name: Build Website
         run: npm run build
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      # 上传构建产物
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      
+      # 配置 GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      # 上传构建产物到 GitHub Pages
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: Home
           path: dist
+      
+      # 部署到 GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
